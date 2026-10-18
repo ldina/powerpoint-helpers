@@ -1,0 +1,63 @@
+Option Explicit
+
+Public Sub PortaFontDispariAlPari()
+    Dim sld As Slide
+    Dim shp As Shape
+    Dim modificati As Long
+
+    For Each sld In ActivePresentation.Slides
+        For Each shp In sld.Shapes
+            EsaminaForma shp, modificati
+        Next shp
+    Next sld
+
+    MsgBox "Caratteri modificati: " & modificati, vbInformation
+End Sub
+
+Private Sub EsaminaForma(ByVal shp As Shape, ByRef modificati As Long)
+    Dim membro As Shape
+    Dim r As Long
+    Dim c As Long
+
+    If shp.Type = msoGroup Then
+        For Each membro In shp.GroupItems
+            EsaminaForma membro, modificati
+        Next membro
+        Exit Sub
+    End If
+
+    If shp.HasTable Then
+        For r = 1 To shp.Table.Rows.Count
+            For c = 1 To shp.Table.Columns.Count
+                EsaminaTesto shp.Table.Cell(r, c).Shape, modificati
+            Next c
+        Next r
+    Else
+        EsaminaTesto shp, modificati
+    End If
+End Sub
+
+Private Sub EsaminaTesto(ByVal shp As Shape, ByRef modificati As Long)
+    Dim tr As TextRange
+    Dim i As Long
+    Dim misura As Single
+    Dim intero As Long
+
+    If shp.HasTextFrame = msoFalse Then Exit Sub
+    If shp.TextFrame.HasText = msoFalse Then Exit Sub
+
+    Set tr = shp.TextFrame.TextRange
+
+    For i = 1 To tr.Length
+        misura = tr.Characters(i, 1).Font.Size
+        intero = CLng(misura)
+
+        ' Modifica solo dimensioni effettivamente intere e dispari.
+        If Abs(misura - intero) < 0.001 Then
+            If intero Mod 2 = 1 Then
+                tr.Characters(i, 1).Font.Size = intero + 1
+                modificati = modificati + 1
+            End If
+        End If
+    Next i
+End Sub
